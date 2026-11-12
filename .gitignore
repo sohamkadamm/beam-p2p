@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.cert/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+tests/__pycache__/
+tests/output/

@@ -1,0 +1,205 @@
+{
+  "info": {
+    "name": "Beam API",
+    "description": "REST endpoints of the Beam server. Set the baseUrl variable to http://localhost:3000 or your Render URL. Set adminPassword to the server's ADMIN_PASSWORD. Run the requests in order: the login cookie is reused.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "adminPassword",
+      "value": "beam-test"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', () => pm.response.to.have.status(200));",
+              "pm.test('server is ok', () => pm.expect(pm.response.json().ok).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "QR base URL",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/config"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('has baseUrl', () => pm.expect(pm.response.json().baseUrl).to.match(/^https?:\\/\\//));",
+              "pm.test('has room TTL', () => pm.expect(pm.response.json().roomTtlSeconds).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ICE servers (STUN/TURN)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/ice-config"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('includes a STUN server', () => pm.expect(JSON.stringify(pm.response.json().iceServers)).to.include('stun:'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usage stats without login returns 401",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/stats"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.cookies.clear && pm.cookies.clear();"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin login with wrong password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"password\": \"not-the-password\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"password\": \"{{adminPassword}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('signed in', () => pm.expect(pm.response.json().signedIn).to.eql(true));",
+              "pm.test('sets HttpOnly cookie', () => pm.expect(pm.response.headers.get('Set-Cookie')).to.include('HttpOnly'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usage stats (after login)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/stats"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const s = pm.response.json();",
+              "pm.test('has totals', () => { pm.expect(s).to.have.property('sessions'); pm.expect(s).to.have.property('bytes'); });",
+              "pm.test('recent is a list', () => pm.expect(s.recent).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin logout",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/admin/logout"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('signed out', () => pm.expect(pm.response.json().signedIn).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unknown route returns 404",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/does-not-exist"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

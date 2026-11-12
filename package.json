@@ -1,0 +1,21 @@
+{
+  "name": "beam-p2p",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Scan a QR, share files instantly. Direct device-to-device file transfer in the browser using WebRTC.",
+  "scripts": {
+    "postinstall": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "start": "npm start --prefix server",
+    "start:https": "npm run start:https --prefix server",
+    "typecheck": "npm run typecheck --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+# One-click deploy on Render's free tier (Blueprint). HTTPS is provided automatically.
+services:
+  - type: web
+    name: beam-p2p
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: ROOM_TTL_SECONDS
+        value: "300"
+      - key: ADMIN_PASSWORD
+        sync: false        # Render asks you to type it in
+      - key: SESSION_SECRET
+        generateValue: true
